@@ -4,6 +4,8 @@
   imports = [
     <nixpkgs/nixos/modules/virtualisation/google-compute-image.nix>
     <sops-nix/modules/sops>
+    ./inadyn.nix
+    ./sops.nix
   ];
 
   nix.settings.trusted-users = [ "root" "tom" ];
@@ -11,7 +13,7 @@
   environment.enableAllTerminfo = true;
 
   environment.systemPackages = with pkgs; [
-    inadyn
+    git
     screen
     vim
     wget
@@ -25,7 +27,7 @@
       "tomaskrupka.cz"
     ];
     dnsProvider = "websupport";
-    credentialsFile = "/var/lib/secrets/certs.secret";
+    credentialsFile = config.sops.templates."websupport_dns.conf".path;
     dnsPropagationCheck = true;
     reloadServices = [
       "node-red.service"
@@ -59,91 +61,67 @@
     recommendedOptimisation = true;
     recommendedProxySettings = true;
 
-    virtualHosts = let
-      SSL = {
-        useACMEHost = "tomaskrupka.cz";
-        forceSSL = true;
+    virtualHosts =
+      let
+        SSL = {
+          useACMEHost = "tomaskrupka.cz";
+          forceSSL = true;
+        };
+      in
+      {
+        "tomaskrupka.cz" = (SSL // {
+          locations."/".root = "/var/www";
+
+          serverAliases = [
+            "www.tomaskrupka.cz"
+          ];
+        });
+
+        "node-red.tomaskrupka.cz" = (SSL // {
+          locations."/".proxyPass = "https://127.0.0.1:1880/";
+          locations."/".proxyWebsockets = true;
+        });
       };
-    in {
-      "tomaskrupka.cz" = (SSL // {
-        locations."/".root = "/var/www";
-
-        serverAliases = [
-          "www.tomaskrupka.cz"
-        ];
-      });
-
-      "node-red.tomaskrupka.cz" = (SSL // {
-        locations."/".proxyPass = "https://127.0.0.1:1880/";
-        locations."/".proxyWebsockets = true;
-      }); 
-    };
   };
 
-  services.mosquitto = let
-    certDir = config.security.acme.certs."tomaskrupka.cz".directory;
-  in 
-  {
+  services.mosquitto =
+    let
+      certDir = config.security.acme.certs."tomaskrupka.cz".directory;
+    in
+    {
+      enable = true;
+      listeners = [
+        {
+          users.red = {
+            acl = [
+              "readwrite #"
+            ];
+            passwordFile = config.sops.secrets."mosquitto/red".path;
+          };
+          port = 1883;
+        }
+        {
+          users.tiny = {
+            acl = [
+              "readwrite #"
+            ];
+            passwordFile = config.sops.secrets."mosquitto/tiny".path;
+          };
+          settings = {
+            protocol = "mqtt";
+            require_certificate = false;
+            keyfile = certDir + "/key.pem";
+            certfile = certDir + "/cert.pem";
+            cafile = certDir + "/chain.pem";
+          };
+          port = 8883;
+        }
+      ];
+    };
+
+  services.inadyn = {
     enable = true;
-    listeners = [
-      {
-        users.red = {
-          acl = [
-            "readwrite #"
-          ];
-          passwordFile = config.sops.secrets."mosquitto/red".path;
-        };
-        port = 1883;
-      }
-      {
-        users.tiny = {
-          acl = [
-            "readwrite #"
-          ];
-          passwordFile = config.sops.secrets."mosquitto/tiny".path;
-        };
-        settings = {
-          protocol = "mqtt";
-          require_certificate = false;
-          keyfile = certDir + "/key.pem";
-          certfile = certDir + "/cert.pem";
-          cafile = certDir + "/chain.pem";
-        };
-        port = 8883;
-      }
-    ];
-  };
-
-  sops = {
-    defaultSopsFile = ./secrets/gcp-instance.yaml;
-    age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
-
-    secrets = {
-      "websupport/dns/api_key" = {};
-      "websupport/dns/secret" = {};
-
-      "websupport/dyn_dns/api_key" = {};
-      "websupport/dyn_dns/secret" = {};
-
-      "github/oauth/client_id" = {};
-      "github/oauth/secret" = {};
-
-      "mosquitto/red" = {
-        owner = config.users.users.mosquitto.name;
-        group = config.users.users.mosquitto.group;
-        reloadUnits = [ "mosquitto.service" ];
-      };
-
-      "mosquitto/tiny" = {
-        owner = config.users.users.mosquitto.name;
-        group = config.users.users.mosquitto.group;
-        reloadUnits = [ "mosquitto.service" ];
-      };
-    };
-
-    templates = {
-
-    };
+    configurationTemplate = config.sops.templates."inadyn.conf".path;
   };
 
   system.stateVersion = "23.05";
