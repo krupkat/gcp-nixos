@@ -6,6 +6,7 @@
     <sops-nix/modules/sops>
     ./inadyn.nix
     ./sops.nix
+    ./vouch.nix
   ];
 
   nix.settings.trusted-users = [ "root" "tom" ];
@@ -50,6 +51,7 @@
   users.users.node-red.extraGroups = [ "acme" ];
   users.users.nginx.extraGroups = [ "acme" ];
   users.users.mosquitto.extraGroups = [ "acme" ];
+  users.users.vouch-proxy.extraGroups = [ "acme" ];
 
   services.nginx = {
     enable = true;
@@ -75,10 +77,10 @@
           ];
         });
 
-        "node-red.tomaskrupka.cz" = (SSL // {
-          locations."/".proxyPass = "https://127.0.0.1:1880/";
-          locations."/".proxyWebsockets = true;
-        });
+        # "node-red.tomaskrupka.cz" = (SSL // {
+        #   locations."/".proxyPass = "https://127.0.0.1:1880/";
+        #   locations."/".proxyWebsockets = true;
+        # });
       };
   };
 
@@ -120,6 +122,11 @@
   services.inadyn = {
     enable = true;
     configurationTemplate = config.sops.templates."inadyn.conf".path;
+  };
+
+  services.vouch-proxy = {
+    enable = true;
+    configurationTemplate = config.sops.templates."vouch.yaml".path;
   };
 
   system.stateVersion = "23.05";

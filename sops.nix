@@ -39,9 +39,34 @@ in
         group = config.users.users.mosquitto.group;
         reloadUnits = [ "mosquitto.service" ];
       };
+
+      "vouch/jwt_secret" = {};
     };
 
     templates = {
+      "vouch.yaml".content = ''
+        vouch:
+          listen: 0.0.0.0
+          port: 9090
+          allowAllUsers: true
+          cookie:
+            domain: tomaskrupka.cz
+          whitelist:
+            - krupkat
+          tls:
+            cert: ${certDir}/cert.pem
+            key: ${certDir}/key.pem
+          jwt:
+            secret: ${config.sops.placeholder."vouch/jwt_secret"}
+        oauth:
+          provider: github
+          client_id: ${config.sops.placeholder."websupport/dns/api_key"}
+          client_secret: ${config.sops.placeholder."github/oauth/secret"}
+          callback_url: https://vouch.tomaskrupka.cz/auth
+          scopes:
+            - user
+      '';
+
       "websupport_dns.conf".content = ''
         WEBSUPPORT_API_KEY='${config.sops.placeholder."websupport/dns/api_key"}'
         WEBSUPPORT_SECRET='${config.sops.placeholder."websupport/dns/secret"}'

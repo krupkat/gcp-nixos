@@ -5,8 +5,6 @@ with lib;
 let
   cfg = config.services.vouch-proxy;
   pkg = getBin cfg.package;
-  configYaml = (pkgs.formats.yaml {}).generate "vouch-proxy-config.yml" cfg.configuration;
-  defaultConfig = {};
 in {
   options.services.vouch-proxy = {
     enable = mkEnableOption (lib.mdDoc "vouch-proxy service");
@@ -20,10 +18,8 @@ in {
       '';
     };
 
-    configuration = mkOption {
-      type = types.attrsOf types.unspecified;
-      default = defaultConfig;
-      example = literalExpression "{}";
+    configurationTemplate = mkOption {
+      type = types.singleLineStr;
       description = lib.mdDoc ''
         vouch-proxy configuration
         ([documentation](https://github.com/vouch/vouch-proxy))
@@ -45,7 +41,10 @@ in {
         User = "vouch-proxy";
         WorkingDirectory = "/var/lib/vouch-proxy";
         StateDirectory = "vouch-proxy";
-        ExecStart = "${pkg}/bin/vouch-proxy -config ${configYaml}";
+        LoadCredential = "config.yaml:${cfg.configurationTemplate}";
+        ExecStart = ''
+          ${pkg}/bin/vouch-proxy -config ''${CREDENTIALS_DIRECTORY}/config.yaml
+        '';
         Restart = "on-failure";
         RestartSec = 5;
       };
