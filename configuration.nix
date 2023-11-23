@@ -41,12 +41,10 @@
     configFile = "/var/lib/node-red/settings.js";
   };
 
-  # systemd.services.node-red.path = with pkgs; [ nodePackages.npm nodejs_18 bash ];
-  #systemd.services.node-red.serviceConfig.ExecStartPre = lib.concatMapStrings (module:
-  #  "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " + module
-  #) [
-  #  "node-red-auth-github @flowfuse/node-red-dashboard"
-  #];
+  systemd.services.node-red.path = with pkgs; [ nodePackages.npm nodejs_18 bash ];
+  systemd.services.node-red.serviceConfig.ExecStartPre =
+    "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " +
+    "node-red-auth-github @flowfuse/node-red-dashboard";
 
   # switch to LoadCredentials:
   users.users.node-red.extraGroups = [ "acme" ];
