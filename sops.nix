@@ -46,9 +46,9 @@ in
     templates = {
       "vouch.yaml".content = ''
         vouch:
-          listen: 0.0.0.0
           port: 9090
-          allowAllUsers: true
+          domains:
+            - tomaskrupka.cz
           cookie:
             domain: tomaskrupka.cz
           whitelist:
@@ -60,11 +60,10 @@ in
             secret: ${config.sops.placeholder."vouch/jwt_secret"}
         oauth:
           provider: github
-          client_id: ${config.sops.placeholder."websupport/dns/api_key"}
+          client_id: ${config.sops.placeholder."github/oauth/client_id"}
           client_secret: ${config.sops.placeholder."github/oauth/secret"}
-          callback_url: https://vouch.tomaskrupka.cz/auth
           scopes:
-            - user
+            - (no scope)
       '';
 
       "websupport_dns.conf".content = ''
@@ -98,15 +97,6 @@ in
           module.exports = {
               flowFile: 'flows.json',
               flowFilePretty: true,
-
-              adminAuth: require('node-red-auth-github')({
-                  clientID: "${config.sops.placeholder."github/oauth/client_id"}",
-                  clientSecret: "${config.sops.placeholder."github/oauth/secret"}",
-                  baseURL: "https://node-red.tomaskrupka.cz/",
-                  users: [
-                      { username: "krupkat", permissions: ["*"] }
-                  ]
-              }),
 
               https: {
                   key: require("fs").readFileSync('${certDir}/key.pem'),
@@ -156,6 +146,13 @@ in
               debugMaxLength: 1000,
               mqttReconnectTime: 15000,
               serialReconnectTime: 15000,
+
+              dashboard: {
+                  middleware: (request, response, next) => {
+                      console.log('User name:', request.headers['x-vouch-user'])
+                      next()
+                  }
+              },
           }
         '';
       };

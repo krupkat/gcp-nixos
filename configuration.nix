@@ -77,10 +77,47 @@
           ];
         });
 
-        # "node-red.tomaskrupka.cz" = (SSL // {
-        #   locations."/".proxyPass = "https://127.0.0.1:1880/";
-        #   locations."/".proxyWebsockets = true;
-        # });
+        "node-red.tomaskrupka.cz" = (SSL // {
+          extraConfig = ''
+            auth_request /validate;
+            error_page 401 = @error401;
+          '';
+
+          locations."/" = {
+            proxyPass = "https://127.0.0.1:1880/";
+            proxyWebsockets = true;
+
+            extraConfig = ''
+              auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+              proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
+            '';
+          };
+
+          locations."/validate" = {
+            proxyPass = "https://127.0.0.1:9090/validate";
+
+            extraConfig = ''
+              proxy_pass_request_body off;
+              proxy_set_header Content-Length "";
+
+              auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+
+              auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
+              auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
+              auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
+            '';
+          };
+
+          locations."@error401".return = ''
+            302 https://vouch.tomaskrupka.cz/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
+          '';
+        });
+
+        "vouch.tomaskrupka.cz" = (SSL // {
+          locations."/" = {
+            proxyPass = "https://127.0.0.1:9090";
+          };
+        });
       };
   };
 
