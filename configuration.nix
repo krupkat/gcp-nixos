@@ -170,5 +170,13 @@
     configurationTemplate = config.sops.templates."vouch.yaml".path;
   };
 
+  users.users.github-actions = {
+    isNormalUser = true;
+    description = "Github Actions deployments";
+    openssh.authorizedKeys.keyFiles = [
+      config.sops.secrets."deploy/public".path
+    ];
+  };
+
   system.stateVersion = "23.05";
 }
