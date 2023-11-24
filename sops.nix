@@ -62,6 +62,7 @@ in
           provider: github
           client_id: ${config.sops.placeholder."github/oauth/client_id"}
           client_secret: ${config.sops.placeholder."github/oauth/secret"}
+          end_session_endpoint: https://github.com/logout
           scopes:
             - (no scope)
       '';

@@ -111,6 +111,10 @@
           locations."@error401".return = ''
             302 https://vouch.tomaskrupka.cz/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
           '';
+
+          locations."/logout".proxyPass = ''
+            https://127.0.0.1:9090/logout
+          '';
         });
 
         "vouch.tomaskrupka.cz" = (SSL // {
