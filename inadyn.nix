@@ -41,7 +41,7 @@ in
       description = "Sync inadyn every hour";
       wantedBy = [ "default.target" ];
       timerConfig = {
-        OnBootSec = cfg.period;
+        OnBootSec = "2m";
         OnUnitActiveSec = cfg.period;
       };
     };

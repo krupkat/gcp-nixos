@@ -49,7 +49,7 @@
 
   # switch to LoadCredentials:
   users.users.node-red.extraGroups = [ "acme" ];
-  users.users.nginx.extraGroups = [ "acme" ];
+  users.users.nginx.extraGroups = [ "acme" "github-actions" ];
   users.users.mosquitto.extraGroups = [ "acme" ];
   users.users.vouch-proxy.extraGroups = [ "acme" ];
 
@@ -70,7 +70,7 @@
       in
       {
         "tomaskrupka.cz" = (SSL // {
-          locations."/".root = "/var/www";
+          locations."/".root = "${config.users.users.github-actions.home}/www";
 
           serverAliases = [
             "www.tomaskrupka.cz"
@@ -125,6 +125,8 @@
       };
   };
 
+  systemd.services.nginx.serviceConfig.ProtectHome = "read-only";
+
   services.mosquitto =
     let
       certDir = config.security.acme.certs."tomaskrupka.cz".directory;
@@ -170,11 +172,14 @@
     configurationTemplate = config.sops.templates."vouch.yaml".path;
   };
 
+  users.groups.github-actions = { };
   users.users.github-actions = {
-    isNormalUser = true;
     description = "Github Actions deployments";
-    openssh.authorizedKeys.keyFiles = [
-      config.sops.secrets."deploy/public".path
+    group = config.users.groups.github-actions.name;
+    homeMode = "0750";
+    isNormalUser = true;
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFa5xTjWp9+btqQ0hkJiU3gys0xD3/uCXK48ZbzlMvjL github-actions@tomaskrupka.cz"
     ];
   };
 

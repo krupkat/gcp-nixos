@@ -41,10 +41,6 @@ in
       };
 
       "vouch/jwt_secret" = {};
-
-      "deploy/public" = {
-        restartUnits = [ "sshd.service" ];
-      };
     };
 
     templates = {
