@@ -86,7 +86,7 @@ in
             checkip-ssl    = true
             ddns-server    = dyndns.websupport.cz
             ddns-path      = "/nic/update?hostname=%h&myip=%i"
-            hostname       = { "tomaskrupka.cz", "node-red.tomaskrupka.cz", "vouch.tomaskrupka.cz" }
+            hostname       = { "tomaskrupka.cz", "www.tomaskrupka.cz", "node-red.tomaskrupka.cz", "vouch.tomaskrupka.cz" }
         }
       '';
 

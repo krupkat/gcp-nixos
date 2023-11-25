@@ -71,10 +71,10 @@
       {
         "tomaskrupka.cz" = (SSL // {
           locations."/".root = "${config.users.users.github-actions.home}/www";
+        });
 
-          serverAliases = [
-            "www.tomaskrupka.cz"
-          ];
+        "www.tomaskrupka.cz" = (SSL // {
+          globalRedirect = "tomaskrupka.cz";
         });
 
         "node-red.tomaskrupka.cz" = (SSL // {
