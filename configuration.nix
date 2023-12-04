@@ -9,6 +9,7 @@
     ./vouch.nix
   ];
 
+  # extra user needed for remote nixos-rebuild support:
   nix.settings.trusted-users = [ "root" "tom" ];
 
   environment.enableAllTerminfo = true;
@@ -33,6 +34,7 @@
     reloadServices = [
       "node-red.service"
       "mosquitto.service"
+      "vouch-proxy.service"
     ];
   };
 
@@ -45,7 +47,7 @@
   systemd.services.node-red.path = with pkgs; [ nodePackages.npm nodejs_18 bash ];
   systemd.services.node-red.serviceConfig.ExecStartPre =
     "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " +
-    "node-red-auth-github @flowfuse/node-red-dashboard";
+    "node-red-auth-github@^0.1.1 @flowfuse/node-red-dashboard@^0.9.0";
 
   # switch to LoadCredentials:
   users.users.node-red.extraGroups = [ "acme" ];
