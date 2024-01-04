@@ -19,5 +19,6 @@ Create new machine according to https://nixos.wiki/wiki/Install_NixOS_on_GCE
   b. add the result to `.sops.yaml`
 4. Rebuild the secrets file
   a. TODO: improve this:
-  b. `sops -d secrets/gcp-instance.yaml secrets/tmp.yaml`
-  c. `sops -e secrets/tmp.yaml secrets/gcp-instance.yaml`
+  b. `sops -d secrets/gcp-instance.yaml > secrets/tmp.yaml`
+  c. `sops -e secrets/tmp.yaml > secrets/gcp-instance.yaml`
+  d. `rm secrets/tmp.yaml`

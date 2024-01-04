@@ -7,6 +7,7 @@
     ./inadyn.nix
     ./sops.nix
     ./vouch.nix
+    ./flatnotes.nix
   ];
 
   # extra user needed for remote nixos-rebuild support:
@@ -173,6 +174,8 @@
     enable = true;
     configurationTemplate = config.sops.templates."vouch.yaml".path;
   };
+
+  services.flatnotes.enable = true;
 
   users.groups.github-actions = { };
   users.users.github-actions = {

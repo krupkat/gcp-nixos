@@ -20,12 +20,12 @@ in
       "websupport/dyn_dns/api_key" = { };
       "websupport/dyn_dns/secret" = { };
 
-      "github/oauth/client_id" = {
-        restartUnits = [ "node-red.service" ];
+      "google/oauth/client_id" = {
+        restartUnits = [ "vouch-proxy.service" ];
       };
 
-      "github/oauth/secret" = {
-        restartUnits = [ "node-red.service" ];
+      "google/oauth/secret" = {
+        restartUnits = [ "vouch-proxy.service" ];
       };
 
       "mosquitto/red" = {
@@ -52,19 +52,20 @@ in
           cookie:
             domain: tomaskrupka.cz
           whitelist:
-            - krupkat
+            - tomas@krupkat.cz
           tls:
             cert: ${certDir}/cert.pem
             key: ${certDir}/key.pem
           jwt:
             secret: ${config.sops.placeholder."vouch/jwt_secret"}
         oauth:
-          provider: github
-          client_id: ${config.sops.placeholder."github/oauth/client_id"}
-          client_secret: ${config.sops.placeholder."github/oauth/secret"}
-          end_session_endpoint: https://github.com/logout
+          provider: google
+          client_id: ${config.sops.placeholder."google/oauth/client_id"}
+          client_secret: ${config.sops.placeholder."google/oauth/secret"}
+          callback_urls:
+            - https://vouch.tomaskrupka.cz/auth
           scopes:
-            - (no scope)
+            - email
       '';
 
       "websupport_dns.conf".content = ''
