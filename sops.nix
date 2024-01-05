@@ -41,6 +41,16 @@ in
       };
 
       "vouch/jwt_secret" = { };
+
+      "restic/backup_password" = {
+        owner = config.users.users.backup.name;
+      };
+
+      "restic/gcs_keys" = {
+        format = "binary";
+        sopsFile = ./secrets/authentic-scout-405520-ae7f408dd47d.json;
+        owner = config.users.users.backup.name;
+      };
     };
 
     templates = {

@@ -22,3 +22,9 @@ Create new machine according to https://nixos.wiki/wiki/Install_NixOS_on_GCE
   b. `sops -d secrets/gcp-instance.yaml > secrets/tmp.yaml`
   c. `sops -e secrets/tmp.yaml > secrets/gcp-instance.yaml`
   d. `rm secrets/tmp.yaml`
+
+# encrypt a file verbatim
+
+```
+sops --input-type binary -e secrets/tmp.json > secrets/encrypted.json
+```

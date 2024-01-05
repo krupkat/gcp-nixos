@@ -196,6 +196,37 @@
 
   services.flatnotes.enable = true;
 
+  services.restic.backups = {
+    gcs = {
+      user = config.users.users.backup.name;
+      repository = "gs:krupkat_backup_cloud:/e2_micro";
+      initialize = true;
+      passwordFile = config.sops.secrets."restic/backup_password".path;
+      paths = [
+        "/var/lib/node-red"
+        "/var/lib/flatnotes"
+      ];
+      environmentFile = builtins.toFile "restic_gcs_env" ''
+        GOOGLE_PROJECT_ID='authentic-scout-405520'
+        GOOGLE_APPLICATION_CREDENTIALS='${config.sops.secrets."restic/gcs_keys".path}'
+      '';
+      extraBackupArgs =
+        let
+          ignoreFile = builtins.toFile "ignore" ''
+            /var/lib/node-red/node-modules
+            /var/lib/node-red/.npm
+            /var/lib/node-red/settings.js
+          '';
+        in
+        [ "--exclude-file=${ignoreFile}" ];
+      timerConfig = {
+        OnCalendar = "daily";
+        Persistent = true;
+        RandomizedDelaySec = "1h";
+      };
+    };
+  };
+
   users.groups.github-actions = { };
   users.users.github-actions = {
     description = "Github Actions deployments";
@@ -205,6 +236,12 @@
     openssh.authorizedKeys.keys = [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFa5xTjWp9+btqQ0hkJiU3gys0xD3/uCXK48ZbzlMvjL github-actions@tomaskrupka.cz"
     ];
+  };
+
+  users.groups.backup = { };
+  users.users.backup = {
+    isSystemUser = true;
+    group = config.users.groups.backup.name;
   };
 
   system.stateVersion = "23.11";
