@@ -22,21 +22,30 @@
     wget
   ];
 
-  security.acme.acceptTerms = true;
-  security.acme.defaults.email = "tomas@krupkat.cz";
-  security.acme.certs."tomaskrupka.cz" = {
-    domain = "*.tomaskrupka.cz";
-    extraDomainNames = [
-      "tomaskrupka.cz"
-    ];
-    dnsProvider = "websupport";
-    credentialsFile = config.sops.templates."websupport_dns.conf".path;
-    dnsPropagationCheck = true;
-    reloadServices = [
-      "node-red.service"
-      "mosquitto.service"
-      "vouch-proxy.service"
-    ];
+  sops.templates = {
+    "websupport_dns.conf".content = ''
+      WEBSUPPORT_API_KEY='${config.sops.placeholder."websupport/dns/api_key"}'
+      WEBSUPPORT_SECRET='${config.sops.placeholder."websupport/dns/secret"}'
+    '';
+  };
+
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "tomas@krupkat.cz";
+    certs."tomaskrupka.cz" = {
+      domain = "*.tomaskrupka.cz";
+      extraDomainNames = [
+        "tomaskrupka.cz"
+      ];
+      dnsProvider = "websupport";
+      credentialsFile = config.sops.templates."websupport_dns.conf".path;
+      dnsPropagationCheck = true;
+      reloadServices = [
+        "node-red.service"
+        "mosquitto.service"
+        "vouch-proxy.service"
+      ];
+    };
   };
 
   services.node-red =

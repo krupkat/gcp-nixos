@@ -50,12 +50,5 @@
         owner = config.users.users.backup.name;
       };
     };
-
-    templates = {
-      "websupport_dns.conf".content = ''
-        WEBSUPPORT_API_KEY='${config.sops.placeholder."websupport/dns/api_key"}'
-        WEBSUPPORT_SECRET='${config.sops.placeholder."websupport/dns/secret"}'
-      '';
-    };
   };
 }
