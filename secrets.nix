@@ -48,7 +48,7 @@
       };
       "restic/gcs_keys" = {
         format = "binary";
-        sopsFile = ./secrets/authentic-scout-405520-ae7f408dd47d.json;
+        sopsFile = ./secrets/authentic-scout-405520-ce3e009f013c.json;
         owner = config.users.users.backup.name;
         group = config.users.users.backup.group;
         reloadUnits = [ "restic-backups-gcs.service" ];
