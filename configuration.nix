@@ -50,116 +50,113 @@ in
     };
   };
 
-  services = {
-    node-red =
-      let
-        certDir = config.security.acme.certs."${domain}".directory;
-      in
-      {
+  services =
+    let
+      certDir = config.security.acme.certs."${domain}".directory;
+      websiteRoot = "${config.users.users.github-actions.home}/www";
+    in
+    {
+      node-red = {
         enable = true;
         port = 1880;
         configFile = pkgs.substituteAll { src = ./templates/node-red-settings.js; cert_dir = certDir; };
       };
 
-    nginx = {
-      enable = true;
+      nginx = {
+        enable = true;
 
-      recommendedGzipSettings = true;
-      recommendedTlsSettings = true;
-      recommendedOptimisation = true;
-      recommendedProxySettings = true;
+        recommendedGzipSettings = true;
+        recommendedTlsSettings = true;
+        recommendedOptimisation = true;
+        recommendedProxySettings = true;
 
-      virtualHosts =
-        let
-          vouchPort = toString config.services.vouch-proxy.port;
-          flatnotesPort = toString config.services.flatnotes.port;
-          nodeRedPort = toString config.services.node-red.port;
-          sslConfig = {
-            useACMEHost = domain;
-            forceSSL = true;
-          };
-          vouchConfig = {
-            extraConfig = ''
-              auth_request /validate;
-              error_page 401 = @error401;
-            '';
-            locations."/validate" = {
-              proxyPass = "https://127.0.0.1:${vouchPort}/validate";
-
+        virtualHosts =
+          let
+            vouchPort = toString config.services.vouch-proxy.port;
+            flatnotesPort = toString config.services.flatnotes.port;
+            nodeRedPort = toString config.services.node-red.port;
+            sslConfig = {
+              useACMEHost = domain;
+              forceSSL = true;
+            };
+            vouchConfig = {
               extraConfig = ''
-                proxy_pass_request_body off;
-                proxy_set_header Content-Length "";
+                auth_request /validate;
+                error_page 401 = @error401;
+              '';
+              locations."/validate" = {
+                proxyPass = "https://127.0.0.1:${vouchPort}/validate";
 
-                auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+                extraConfig = ''
+                  proxy_pass_request_body off;
+                  proxy_set_header Content-Length "";
 
-                auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
-                auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
-                auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
+                  auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+
+                  auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
+                  auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
+                  auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
+                '';
+              };
+              locations."@error401".return = ''
+                302 https://vouch.${domain}/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
+              '';
+
+              locations."/logout".proxyPass = ''
+                https://127.0.0.1:${vouchPort}/logout
               '';
             };
-            locations."@error401".return = ''
-              302 https://vouch.${domain}/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
-            '';
+          in
+          {
+            "${domain}" = sslConfig // {
+              locations."/".root = websiteRoot;
+            };
 
-            locations."/logout".proxyPass = ''
-              https://127.0.0.1:${vouchPort}/logout
-            '';
-          };
-        in
-        {
-          "${domain}" = sslConfig // {
-            locations."/".root = "${config.users.users.github-actions.home}/www";
-          };
+            "www.${domain}" = sslConfig // {
+              globalRedirect = domain;
+            };
 
-          "www.${domain}" = sslConfig // {
-            globalRedirect = domain;
-          };
+            "node-red.${domain}" = lib.mkMerge [
+              sslConfig
+              vouchConfig
+              {
+                locations."/" = {
+                  proxyPass = "https://127.0.0.1:${nodeRedPort}/";
+                  proxyWebsockets = true;
 
-          "node-red.${domain}" = lib.mkMerge [
-            sslConfig
-            vouchConfig
-            {
+                  extraConfig = ''
+                    auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+                    proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
+                  '';
+                };
+              }
+            ];
+
+            "notes.${domain}" = lib.mkMerge [
+              sslConfig
+              vouchConfig
+              {
+                locations."/" = {
+                  proxyPass = "http://127.0.0.1:${flatnotesPort}/";
+                  proxyWebsockets = true;
+
+                  extraConfig = ''
+                    auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+                    proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
+                  '';
+                };
+              }
+            ];
+
+            "vouch.${domain}" = sslConfig // {
               locations."/" = {
-                proxyPass = "https://127.0.0.1:${nodeRedPort}/";
-                proxyWebsockets = true;
-
-                extraConfig = ''
-                  auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
-                  proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
-                '';
+                proxyPass = "https://127.0.0.1:${vouchPort}";
               };
-            }
-          ];
-
-          "notes.${domain}" = lib.mkMerge [
-            sslConfig
-            vouchConfig
-            {
-              locations."/" = {
-                proxyPass = "http://127.0.0.1:${flatnotesPort}/";
-                proxyWebsockets = true;
-
-                extraConfig = ''
-                  auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
-                  proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
-                '';
-              };
-            }
-          ];
-
-          "vouch.${domain}" = sslConfig // {
-            locations."/" = {
-              proxyPass = "https://127.0.0.1:${vouchPort}";
             };
           };
-        };
-    };
+      };
 
-    mosquitto =
-      let
-        certDir = config.security.acme.certs."${domain}".directory;
-      in
-      {
+      mosquitto = {
         enable = true;
         listeners = [
           {
@@ -190,54 +187,54 @@ in
         ];
       };
 
-    inadyn = {
-      enable = true;
-      period = "10m";
-      hostname = domain;
-      subdomains = [ "www" "node-red" "vouch" "home" "notes" ];
-    };
+      inadyn = {
+        enable = true;
+        period = "10m";
+        hostname = domain;
+        subdomains = [ "www" "node-red" "vouch" "home" "notes" ];
+      };
 
-    vouch-proxy = {
-      enable = true;
-      certDir = config.security.acme.certs."${domain}".directory;
-      hostname = domain;
-      port = 9090;
-    };
+      vouch-proxy = {
+        enable = true;
+        certDir = certDir;
+        hostname = domain;
+        port = 9090;
+      };
 
-    flatnotes = {
-      enable = true;
-      port = 8080;
-    };
+      flatnotes = {
+        enable = true;
+        port = 8080;
+      };
 
-    restic.backups.gcs = {
-      user = config.users.users.backup.name;
-      repository = "gs:krupkat_backup_cloud:/e2_micro";
-      initialize = true;
-      passwordFile = config.sops.secrets."restic/backup_password".path;
-      paths = [
-        "/home/github-actions/www"
-        "/var/lib/node-red"
-        "/var/lib/flatnotes"
-      ];
-      environmentFile = builtins.toFile "restic_gcs_env" ''
-        GOOGLE_PROJECT_ID='authentic-scout-405520'
-        GOOGLE_APPLICATION_CREDENTIALS='${config.sops.secrets."restic/gcs_keys".path}'
-      '';
-      extraBackupArgs =
-        let
-          ignoreFile = builtins.toFile "ignore" ''
-            /var/lib/node-red/node-modules
-            /var/lib/node-red/.npm
-          '';
-        in
-        [ "--exclude-file=${ignoreFile}" ];
-      timerConfig = {
-        OnCalendar = "daily";
-        Persistent = true;
-        RandomizedDelaySec = "1h";
+      restic.backups.gcs = {
+        user = config.users.users.backup.name;
+        repository = "gs:krupkat_backup_cloud:/e2_micro";
+        initialize = true;
+        passwordFile = config.sops.secrets."restic/backup_password".path;
+        paths = [
+          websiteRoot
+          config.services.node-red.userDir
+          config.services.flatnotes.userDir
+        ];
+        environmentFile = builtins.toFile "restic_gcs_env" ''
+          GOOGLE_PROJECT_ID='authentic-scout-405520'
+          GOOGLE_APPLICATION_CREDENTIALS='${config.sops.secrets."restic/gcs_keys".path}'
+        '';
+        extraBackupArgs =
+          let
+            ignoreFile = builtins.toFile "ignore" ''
+              ${config.services.node-red.userDir}/node-modules
+              ${config.services.node-red.userDir}/.npm
+            '';
+          in
+          [ "--exclude-file=${ignoreFile}" ];
+        timerConfig = {
+          OnCalendar = "daily";
+          Persistent = true;
+          RandomizedDelaySec = "1h";
+        };
       };
     };
-  };
 
   systemd.services = {
     # this is to give nginx access to /home/github-actions/www

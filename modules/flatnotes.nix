@@ -14,6 +14,14 @@ in
       default = 8080;
       description = mdDoc "Listening port.";
     };
+
+    userDir = mkOption {
+      type = types.path;
+      default = "/var/lib/flatnotes";
+      description = lib.mdDoc ''
+        The directory to store all user data.
+      '';
+    };
   };
 
   config = mkIf cfg.enable {
@@ -51,7 +59,7 @@ in
               --replace \
               -e 'FLATNOTES_AUTH_TYPE'='none' \
               -p '127.0.0.1:${toString cfg.port}:8080' \
-              -v '/var/lib/flatnotes:/data' \
+              -v '${cfg.userDir}:/data' \
               dullage/flatnotes:latest
           '';
         };
@@ -79,7 +87,7 @@ in
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
           User = config.users.users.flatnotes.name;
-          WorkingDirectory = "/var/lib/flatnotes";
+          WorkingDirectory = cfg.userDir;
           StateDirectory = "flatnotes";
           RuntimeDirectory = "flatnotes";
           EnvironmentFile = builtins.toFile "flatnotes_env" ''
