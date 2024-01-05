@@ -7,10 +7,10 @@ in
   imports = [
     <nixpkgs/nixos/modules/virtualisation/google-compute-image.nix>
     <sops-nix/modules/sops>
-    ./inadyn.nix
+    ./modules/inadyn.nix
+    ./modules/flatnotes.nix
+    ./modules/vouch.nix
     ./secrets.nix
-    ./vouch.nix
-    ./flatnotes.nix
   ];
 
   # extra user needed for remote nixos-rebuild support:
