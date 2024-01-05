@@ -33,21 +33,25 @@
       "mosquitto/red" = {
         owner = config.users.users.mosquitto.name;
         group = config.users.users.mosquitto.group;
-        reloadUnits = [ "mosquitto.service" ];
+        restartUnits = [ "mosquitto.service" ];
       };
       "mosquitto/tiny" = {
         owner = config.users.users.mosquitto.name;
         group = config.users.users.mosquitto.group;
-        reloadUnits = [ "mosquitto.service" ];
+        restartUnits = [ "mosquitto.service" ];
       };
 
       "restic/backup_password" = {
         owner = config.users.users.backup.name;
+        group = config.users.users.backup.group;
+        reloadUnits = [ "restic-backups-gcs.service" ];
       };
       "restic/gcs_keys" = {
         format = "binary";
         sopsFile = ./secrets/authentic-scout-405520-ae7f408dd47d.json;
         owner = config.users.users.backup.name;
+        group = config.users.users.backup.group;
+        reloadUnits = [ "restic-backups-gcs.service" ];
       };
     };
   };
