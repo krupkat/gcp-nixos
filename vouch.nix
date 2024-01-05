@@ -25,6 +25,13 @@ in
       '';
     };
 
+    hostname = mkOption {
+      type = types.str;
+      description = mdDoc ''
+        Hostname to protect.
+      '';
+    };
+
     port = mkOption {
       type = types.port;
       default = 9090;
@@ -37,9 +44,9 @@ in
       vouch:
         port: ${toString cfg.port}
         domains:
-          - tomaskrupka.cz
+          - ${cfg.hostname}
         cookie:
-          domain: tomaskrupka.cz
+          domain: ${cfg.hostname}
         whitelist:
           - tomas@krupkat.cz
         tls:
@@ -53,7 +60,7 @@ in
         client_id: ${config.sops.placeholder."google/oauth/client_id"}
         client_secret: ${config.sops.placeholder."google/oauth/secret"}
         callback_urls:
-          - https://vouch.tomaskrupka.cz/auth
+          - https://vouch.${cfg.hostname}/auth
         scopes:
           - email
     '';
@@ -76,6 +83,10 @@ in
         '';
         Restart = "on-failure";
         RestartSec = 5;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateUsers = true;
+        PrivateTmp = true;
       };
     };
 

@@ -199,6 +199,7 @@
     vouch-proxy = {
       enable = true;
       certDir = config.security.acme.certs."tomaskrupka.cz".directory;
+      hostname = "tomaskrupka.cz";
       port = 9090;
     };
 
