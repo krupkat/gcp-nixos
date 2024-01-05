@@ -25,15 +25,29 @@ in
         How often to run the service.
       '';
     };
+
+    hostname = mkOption {
+      type = types.str;
+      description = mdDoc ''
+        Hostname to keep dns synced.
+      '';
+    };
+
+    subdomains = mkOption {
+      type = types.listOf types.str;
+      default = [ ];
+      description = mdDoc ''
+        Subdomains to keep dns synced.
+      '';
+    };
   };
 
   config = mkIf cfg.enable {
     sops.templates."inadyn.conf".content =
       let
         quote = (x: "\"" + x + "\"");
-        hostname = "tomaskrupka.cz";
-        hostnames = quote hostname + (concatMapStrings (x: ", " + quote (x + "." + hostname))
-          [ "www" "node-red" "vouch" "home" "notes" ]);
+        hostnames = quote cfg.hostname +
+          (concatMapStrings (x: ", " + quote (x + "." + cfg.hostname)) cfg.subdomains);
       in
       ''
         # In-A-Dyn v2.0 configuration file format

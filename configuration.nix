@@ -192,6 +192,8 @@
     inadyn = {
       enable = true;
       period = "10m";
+      hostname = "tomaskrupka.cz";
+      subdomains = [ "www" "node-red" "vouch" "home" "notes" ];
     };
 
     vouch-proxy = {
