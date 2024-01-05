@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 
 let
   certDir = config.security.acme.certs."tomaskrupka.cz".directory;
@@ -40,7 +40,7 @@ in
         reloadUnits = [ "mosquitto.service" ];
       };
 
-      "vouch/jwt_secret" = {};
+      "vouch/jwt_secret" = { };
     };
 
     templates = {
@@ -73,23 +73,30 @@ in
         WEBSUPPORT_SECRET='${config.sops.placeholder."websupport/dns/secret"}'
       '';
 
-      "inadyn.conf".content = ''
-        # In-A-Dyn v2.0 configuration file format
-        period          = 600
-        user-agent      = Mozilla/5.0
+      "inadyn.conf".content =
+        let
+          quote = (x: "\"" + x + "\"");
+          hostname = "tomaskrupka.cz";
+          hostnames = quote hostname + (lib.concatMapStrings (x: ", " + quote (x + "." + hostname))
+            [ "www" "node-red" "vouch" "home" "notes" ]);
+        in
+        ''
+          # In-A-Dyn v2.0 configuration file format
+          period          = 600
+          user-agent      = Mozilla/5.0
 
-        custom websupport {
-            ssl            = true
-            username       = ${config.sops.placeholder."websupport/dyn_dns/api_key"}
-            password       = ${config.sops.placeholder."websupport/dyn_dns/secret"}
-            checkip-server = ifconfig.me
-            checkip-path   = /ip
-            checkip-ssl    = true
-            ddns-server    = dyndns.websupport.cz
-            ddns-path      = "/nic/update?hostname=%h&myip=%i"
-            hostname       = { "tomaskrupka.cz", "www.tomaskrupka.cz", "node-red.tomaskrupka.cz", "vouch.tomaskrupka.cz" }
-        }
-      '';
+          custom websupport {
+              ssl            = true
+              username       = ${config.sops.placeholder."websupport/dyn_dns/api_key"}
+              password       = ${config.sops.placeholder."websupport/dyn_dns/secret"}
+              checkip-server = ifconfig.me
+              checkip-path   = /ip
+              checkip-ssl    = true
+              ddns-server    = dyndns.websupport.cz
+              ddns-path      = "/nic/update?hostname=%h&myip=%i"
+              hostname       = { ${hostnames} }
+          }
+        '';
 
       "nodered.settings.js" = {
         owner = config.users.users.node-red.name;

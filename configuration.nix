@@ -70,32 +70,11 @@
           useACMEHost = "tomaskrupka.cz";
           forceSSL = true;
         };
-      in
-      {
-        "tomaskrupka.cz" = (SSL // {
-          locations."/".root = "${config.users.users.github-actions.home}/www";
-        });
-
-        "www.tomaskrupka.cz" = (SSL // {
-          globalRedirect = "tomaskrupka.cz";
-        });
-
-        "node-red.tomaskrupka.cz" = (SSL // {
+        Vouch = {
           extraConfig = ''
             auth_request /validate;
             error_page 401 = @error401;
           '';
-
-          locations."/" = {
-            proxyPass = "https://127.0.0.1:1880/";
-            proxyWebsockets = true;
-
-            extraConfig = ''
-              auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
-              proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
-            '';
-          };
-
           locations."/validate" = {
             proxyPass = "https://127.0.0.1:9090/validate";
 
@@ -110,7 +89,6 @@
               auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
             '';
           };
-
           locations."@error401".return = ''
             302 https://vouch.tomaskrupka.cz/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
           '';
@@ -118,7 +96,48 @@
           locations."/logout".proxyPass = ''
             https://127.0.0.1:9090/logout
           '';
+        };
+      in
+      {
+        "tomaskrupka.cz" = (SSL // {
+          locations."/".root = "${config.users.users.github-actions.home}/www";
         });
+
+        "www.tomaskrupka.cz" = (SSL // {
+          globalRedirect = "tomaskrupka.cz";
+        });
+
+        "node-red.tomaskrupka.cz" = lib.mkMerge [
+          SSL
+          Vouch
+          {
+            locations."/" = {
+              proxyPass = "https://127.0.0.1:1880/";
+              proxyWebsockets = true;
+
+              extraConfig = ''
+                auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+                proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
+              '';
+            };
+          }
+        ];
+
+        "notes.tomaskrupka.cz" = lib.mkMerge [
+          SSL
+          Vouch
+          {
+            locations."/" = {
+              proxyPass = "http://127.0.0.1:8080/";
+              proxyWebsockets = true;
+
+              extraConfig = ''
+                auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+                proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
+              '';
+            };
+          }
+        ];
 
         "vouch.tomaskrupka.cz" = (SSL // {
           locations."/" = {
