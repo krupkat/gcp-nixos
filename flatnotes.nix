@@ -6,6 +6,12 @@ in
 {
   options.services.flatnotes = {
     enable = lib.mkEnableOption (lib.mdDoc "flatnotes service");
+
+    port = mkOption {
+      type = types.port;
+      default = 8080;
+      description = lib.mdDoc "Listening port.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -42,7 +48,7 @@ in
               -d \
               --replace \
               -e 'FLATNOTES_AUTH_TYPE'='none' \
-              -p '127.0.0.1:8080:8080' \
+              -p '127.0.0.1:${cfg.port}:8080' \
               -v '/var/lib/flatnotes:/data' \
               dullage/flatnotes:latest
           '';
@@ -99,7 +105,7 @@ in
       group = config.users.groups.flatnotes.name;
       homeMode = "0750";
       isNormalUser = true;
-      linger = true;
+      linger = true; # this is needed to run podman in rootless mode
     };
 
     virtualisation.podman.enable = true;

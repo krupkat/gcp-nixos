@@ -151,6 +151,7 @@
       };
   };
 
+  # this is to have access to /home/github/actions/www
   systemd.services.nginx.serviceConfig.ProtectHome = "read-only";
 
   services.mosquitto =
@@ -190,14 +191,19 @@
 
   services.inadyn = {
     enable = true;
+    period = "10m";
   };
 
   services.vouch-proxy = {
     enable = true;
     certDir = config.security.acme.certs."tomaskrupka.cz".directory;
+    port = 9090;
   };
 
-  services.flatnotes.enable = true;
+  services.flatnotes = {
+    enable = true;
+    port = 8080;
+  };
 
   services.restic.backups = {
     gcs = {

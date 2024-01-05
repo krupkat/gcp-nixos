@@ -24,12 +24,18 @@ in
         Directory with ssl certificates for the domain.
       '';
     };
+
+    port = mkOption {
+      type = types.port;
+      default = 9090;
+      description = lib.mdDoc "Listening port.";
+    };
   };
 
   config = mkIf cfg.enable {
     sops.templates."vouch.yaml".content = ''
       vouch:
-        port: 9090
+        port: ${cfg.port}
         domains:
           - tomaskrupka.cz
         cookie:
