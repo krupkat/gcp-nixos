@@ -49,163 +49,163 @@
     };
   };
 
-  services.node-red =
-    let
-      certDir = config.security.acme.certs."tomaskrupka.cz".directory;
-    in
-    {
-      enable = true;
-      port = 1880;
-      configFile = pkgs.substituteAll { src = ./templates/node-red-settings.js; cert_dir = certDir; };
-    };
-
-  services.nginx = {
-    enable = true;
-
-    recommendedGzipSettings = true;
-    recommendedTlsSettings = true;
-    recommendedOptimisation = true;
-    recommendedProxySettings = true;
-
-    virtualHosts =
+  services = {
+    node-red =
       let
-        vouchPort = toString config.services.vouch-proxy.port;
-        flatnotesPort = toString config.services.flatnotes.port;
-        nodeRedPort = toString config.services.node-red.port;
-        SSL = {
-          useACMEHost = "tomaskrupka.cz";
-          forceSSL = true;
-        };
-        Vouch = {
-          extraConfig = ''
-            auth_request /validate;
-            error_page 401 = @error401;
-          '';
-          locations."/validate" = {
-            proxyPass = "https://127.0.0.1:${vouchPort}/validate";
-
-            extraConfig = ''
-              proxy_pass_request_body off;
-              proxy_set_header Content-Length "";
-
-              auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
-
-              auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
-              auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
-              auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
-            '';
-          };
-          locations."@error401".return = ''
-            302 https://vouch.tomaskrupka.cz/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
-          '';
-
-          locations."/logout".proxyPass = ''
-            https://127.0.0.1:${vouchPort}/logout
-          '';
-        };
+        certDir = config.security.acme.certs."tomaskrupka.cz".directory;
       in
       {
-        "tomaskrupka.cz" = (SSL // {
-          locations."/".root = "${config.users.users.github-actions.home}/www";
-        });
-
-        "www.tomaskrupka.cz" = (SSL // {
-          globalRedirect = "tomaskrupka.cz";
-        });
-
-        "node-red.tomaskrupka.cz" = lib.mkMerge [
-          SSL
-          Vouch
-          {
-            locations."/" = {
-              proxyPass = "https://127.0.0.1:${nodeRedPort}/";
-              proxyWebsockets = true;
-
-              extraConfig = ''
-                auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
-                proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
-              '';
-            };
-          }
-        ];
-
-        "notes.tomaskrupka.cz" = lib.mkMerge [
-          SSL
-          Vouch
-          {
-            locations."/" = {
-              proxyPass = "http://127.0.0.1:${flatnotesPort}/";
-              proxyWebsockets = true;
-
-              extraConfig = ''
-                auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
-                proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
-              '';
-            };
-          }
-        ];
-
-        "vouch.tomaskrupka.cz" = (SSL // {
-          locations."/" = {
-            proxyPass = "https://127.0.0.1:${vouchPort}";
-          };
-        });
+        enable = true;
+        port = 1880;
+        configFile = pkgs.substituteAll { src = ./templates/node-red-settings.js; cert_dir = certDir; };
       };
-  };
 
-  services.mosquitto =
-    let
-      certDir = config.security.acme.certs."tomaskrupka.cz".directory;
-    in
-    {
+    nginx = {
       enable = true;
-      listeners = [
+
+      recommendedGzipSettings = true;
+      recommendedTlsSettings = true;
+      recommendedOptimisation = true;
+      recommendedProxySettings = true;
+
+      virtualHosts =
+        let
+          vouchPort = toString config.services.vouch-proxy.port;
+          flatnotesPort = toString config.services.flatnotes.port;
+          nodeRedPort = toString config.services.node-red.port;
+          SSL = {
+            useACMEHost = "tomaskrupka.cz";
+            forceSSL = true;
+          };
+          Vouch = {
+            extraConfig = ''
+              auth_request /validate;
+              error_page 401 = @error401;
+            '';
+            locations."/validate" = {
+              proxyPass = "https://127.0.0.1:${vouchPort}/validate";
+
+              extraConfig = ''
+                proxy_pass_request_body off;
+                proxy_set_header Content-Length "";
+
+                auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+
+                auth_request_set $auth_resp_jwt $upstream_http_x_vouch_jwt;
+                auth_request_set $auth_resp_err $upstream_http_x_vouch_err;
+                auth_request_set $auth_resp_failcount $upstream_http_x_vouch_failcount;
+              '';
+            };
+            locations."@error401".return = ''
+              302 https://vouch.tomaskrupka.cz/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
+            '';
+
+            locations."/logout".proxyPass = ''
+              https://127.0.0.1:${vouchPort}/logout
+            '';
+          };
+        in
         {
-          users.red = {
-            acl = [
-              "readwrite #"
-            ];
-            passwordFile = config.sops.secrets."mosquitto/red".path;
-          };
-          port = 1883;
-        }
-        {
-          users.tiny = {
-            acl = [
-              "readwrite #"
-            ];
-            passwordFile = config.sops.secrets."mosquitto/tiny".path;
-          };
-          settings = {
-            protocol = "mqtt";
-            require_certificate = false;
-            keyfile = certDir + "/key.pem";
-            certfile = certDir + "/cert.pem";
-            cafile = certDir + "/chain.pem";
-          };
-          port = 8883;
-        }
-      ];
+          "tomaskrupka.cz" = (SSL // {
+            locations."/".root = "${config.users.users.github-actions.home}/www";
+          });
+
+          "www.tomaskrupka.cz" = (SSL // {
+            globalRedirect = "tomaskrupka.cz";
+          });
+
+          "node-red.tomaskrupka.cz" = lib.mkMerge [
+            SSL
+            Vouch
+            {
+              locations."/" = {
+                proxyPass = "https://127.0.0.1:${nodeRedPort}/";
+                proxyWebsockets = true;
+
+                extraConfig = ''
+                  auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+                  proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
+                '';
+              };
+            }
+          ];
+
+          "notes.tomaskrupka.cz" = lib.mkMerge [
+            SSL
+            Vouch
+            {
+              locations."/" = {
+                proxyPass = "http://127.0.0.1:${flatnotesPort}/";
+                proxyWebsockets = true;
+
+                extraConfig = ''
+                  auth_request_set $auth_resp_x_vouch_user $upstream_http_x_vouch_user;
+                  proxy_set_header X-Vouch-User $auth_resp_x_vouch_user;
+                '';
+              };
+            }
+          ];
+
+          "vouch.tomaskrupka.cz" = (SSL // {
+            locations."/" = {
+              proxyPass = "https://127.0.0.1:${vouchPort}";
+            };
+          });
+        };
     };
 
-  services.inadyn = {
-    enable = true;
-    period = "10m";
-  };
+    mosquitto =
+      let
+        certDir = config.security.acme.certs."tomaskrupka.cz".directory;
+      in
+      {
+        enable = true;
+        listeners = [
+          {
+            users.red = {
+              acl = [
+                "readwrite #"
+              ];
+              passwordFile = config.sops.secrets."mosquitto/red".path;
+            };
+            port = 1883;
+          }
+          {
+            users.tiny = {
+              acl = [
+                "readwrite #"
+              ];
+              passwordFile = config.sops.secrets."mosquitto/tiny".path;
+            };
+            settings = {
+              protocol = "mqtt";
+              require_certificate = false;
+              keyfile = certDir + "/key.pem";
+              certfile = certDir + "/cert.pem";
+              cafile = certDir + "/chain.pem";
+            };
+            port = 8883;
+          }
+        ];
+      };
 
-  services.vouch-proxy = {
-    enable = true;
-    certDir = config.security.acme.certs."tomaskrupka.cz".directory;
-    port = 9090;
-  };
+    inadyn = {
+      enable = true;
+      period = "10m";
+    };
 
-  services.flatnotes = {
-    enable = true;
-    port = 8080;
-  };
+    vouch-proxy = {
+      enable = true;
+      certDir = config.security.acme.certs."tomaskrupka.cz".directory;
+      port = 9090;
+    };
 
-  services.restic.backups = {
-    gcs = {
+    flatnotes = {
+      enable = true;
+      port = 8080;
+    };
+
+    restic.backups.gcs = {
       user = config.users.users.backup.name;
       repository = "gs:krupkat_backup_cloud:/e2_micro";
       initialize = true;
