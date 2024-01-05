@@ -39,16 +39,20 @@
     ];
   };
 
-  services.node-red = {
-    enable = true;
-    port = 1880;
-    configFile = "/var/lib/node-red/settings.js";
-  };
+  services.node-red =
+    let
+      certDir = config.security.acme.certs."tomaskrupka.cz".directory;
+    in
+    {
+      enable = true;
+      port = 1880;
+      configFile = pkgs.substituteAll { src = ./templates/node-red-settings.js; cert_dir = certDir; };
+    };
 
-  systemd.services.node-red.path = with pkgs; [ nodePackages.npm nodejs_18 bash ];
+  systemd.services.node-red.path = with pkgs; [ nodePackages.npm nodePackages.nodejs bash ];
   systemd.services.node-red.serviceConfig.ExecStartPre =
     "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " +
-    "node-red-auth-github@^0.1.1 @flowfuse/node-red-dashboard@^0.9.0";
+    "@flowfuse/node-red-dashboard@^0.11.0";
 
   # switch to LoadCredentials:
   users.users.node-red.extraGroups = [ "acme" ];
@@ -215,7 +219,6 @@
           ignoreFile = builtins.toFile "ignore" ''
             /var/lib/node-red/node-modules
             /var/lib/node-red/.npm
-            /var/lib/node-red/settings.js
           '';
         in
         [ "--exclude-file=${ignoreFile}" ];
