@@ -1,5 +1,8 @@
 { config, lib, pkgs, ... }:
 
+let
+  domain = "tomaskrupka.cz";
+in
 {
   imports = [
     <nixpkgs/nixos/modules/virtualisation/google-compute-image.nix>
@@ -33,11 +36,9 @@
   security.acme = {
     acceptTerms = true;
     defaults.email = "tomas@krupkat.cz";
-    certs."tomaskrupka.cz" = {
-      domain = "*.tomaskrupka.cz";
-      extraDomainNames = [
-        "tomaskrupka.cz"
-      ];
+    certs."${domain}" = {
+      domain = "*.${domain}";
+      extraDomainNames = [ domain ];
       dnsProvider = "websupport";
       credentialsFile = config.sops.templates."websupport_dns.conf".path;
       dnsPropagationCheck = true;
@@ -52,7 +53,7 @@
   services = {
     node-red =
       let
-        certDir = config.security.acme.certs."tomaskrupka.cz".directory;
+        certDir = config.security.acme.certs."${domain}".directory;
       in
       {
         enable = true;
@@ -73,11 +74,11 @@
           vouchPort = toString config.services.vouch-proxy.port;
           flatnotesPort = toString config.services.flatnotes.port;
           nodeRedPort = toString config.services.node-red.port;
-          SSL = {
-            useACMEHost = "tomaskrupka.cz";
+          sslConfig = {
+            useACMEHost = domain;
             forceSSL = true;
           };
-          Vouch = {
+          vouchConfig = {
             extraConfig = ''
               auth_request /validate;
               error_page 401 = @error401;
@@ -97,7 +98,7 @@
               '';
             };
             locations."@error401".return = ''
-              302 https://vouch.tomaskrupka.cz/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
+              302 https://vouch.${domain}/login?url=$scheme://$http_host$request_uri&vouch-failcount=$auth_resp_failcount&X-Vouch-Token=$auth_resp_jwt&error=$auth_resp_err
             '';
 
             locations."/logout".proxyPass = ''
@@ -106,17 +107,17 @@
           };
         in
         {
-          "tomaskrupka.cz" = (SSL // {
+          "${domain}" = (sslConfig // {
             locations."/".root = "${config.users.users.github-actions.home}/www";
           });
 
-          "www.tomaskrupka.cz" = (SSL // {
-            globalRedirect = "tomaskrupka.cz";
+          "www.${domain}" = (sslConfig // {
+            globalRedirect = domain;
           });
 
-          "node-red.tomaskrupka.cz" = lib.mkMerge [
-            SSL
-            Vouch
+          "node-red.${domain}" = lib.mkMerge [
+            sslConfig
+            vouchConfig
             {
               locations."/" = {
                 proxyPass = "https://127.0.0.1:${nodeRedPort}/";
@@ -130,9 +131,9 @@
             }
           ];
 
-          "notes.tomaskrupka.cz" = lib.mkMerge [
-            SSL
-            Vouch
+          "notes.${domain}" = lib.mkMerge [
+            sslConfig
+            vouchConfig
             {
               locations."/" = {
                 proxyPass = "http://127.0.0.1:${flatnotesPort}/";
@@ -146,7 +147,7 @@
             }
           ];
 
-          "vouch.tomaskrupka.cz" = (SSL // {
+          "vouch.${domain}" = (sslConfig // {
             locations."/" = {
               proxyPass = "https://127.0.0.1:${vouchPort}";
             };
@@ -156,7 +157,7 @@
 
     mosquitto =
       let
-        certDir = config.security.acme.certs."tomaskrupka.cz".directory;
+        certDir = config.security.acme.certs."${domain}".directory;
       in
       {
         enable = true;
@@ -192,14 +193,14 @@
     inadyn = {
       enable = true;
       period = "10m";
-      hostname = "tomaskrupka.cz";
+      hostname = domain;
       subdomains = [ "www" "node-red" "vouch" "home" "notes" ];
     };
 
     vouch-proxy = {
       enable = true;
-      certDir = config.security.acme.certs."tomaskrupka.cz".directory;
-      hostname = "tomaskrupka.cz";
+      certDir = config.security.acme.certs."${domain}".directory;
+      hostname = domain;
       port = 9090;
     };
 
@@ -263,7 +264,7 @@
         homeMode = "0750";
         isNormalUser = true;
         openssh.authorizedKeys.keys = [
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFa5xTjWp9+btqQ0hkJiU3gys0xD3/uCXK48ZbzlMvjL github-actions@tomaskrupka.cz"
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFa5xTjWp9+btqQ0hkJiU3gys0xD3/uCXK48ZbzlMvjL"
         ];
       };
 
