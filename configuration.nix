@@ -13,14 +13,15 @@
   # extra user needed for remote nixos-rebuild support:
   nix.settings.trusted-users = [ "root" "tom" ];
 
-  environment.enableAllTerminfo = true;
-
-  environment.systemPackages = with pkgs; [
-    git
-    screen
-    vim
-    wget
-  ];
+  environment = {
+    enableAllTerminfo = true;
+    systemPackages = with pkgs; [
+      git
+      screen
+      vim
+      wget
+    ];
+  };
 
   sops.templates = {
     "websupport_dns.conf".content = ''
@@ -58,17 +59,6 @@
       configFile = pkgs.substituteAll { src = ./templates/node-red-settings.js; cert_dir = certDir; };
     };
 
-  systemd.services.node-red.path = with pkgs; [ nodePackages.npm nodePackages.nodejs bash ];
-  systemd.services.node-red.serviceConfig.ExecStartPre =
-    "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " +
-    "@flowfuse/node-red-dashboard@^0.11.0";
-
-  # switch to LoadCredentials:
-  users.users.node-red.extraGroups = [ "acme" ];
-  users.users.nginx.extraGroups = [ "acme" "github-actions" ];
-  users.users.mosquitto.extraGroups = [ "acme" ];
-  users.users.vouch-proxy.extraGroups = [ "acme" ];
-
   services.nginx = {
     enable = true;
 
@@ -79,6 +69,9 @@
 
     virtualHosts =
       let
+        vouchPort = toString config.services.vouch-proxy.port;
+        flatnotesPort = toString config.services.flatnotes.port;
+        nodeRedPort = toString config.services.node-red.port;
         SSL = {
           useACMEHost = "tomaskrupka.cz";
           forceSSL = true;
@@ -89,7 +82,7 @@
             error_page 401 = @error401;
           '';
           locations."/validate" = {
-            proxyPass = "https://127.0.0.1:9090/validate";
+            proxyPass = "https://127.0.0.1:${vouchPort}/validate";
 
             extraConfig = ''
               proxy_pass_request_body off;
@@ -107,7 +100,7 @@
           '';
 
           locations."/logout".proxyPass = ''
-            https://127.0.0.1:9090/logout
+            https://127.0.0.1:${vouchPort}/logout
           '';
         };
       in
@@ -125,7 +118,7 @@
           Vouch
           {
             locations."/" = {
-              proxyPass = "https://127.0.0.1:1880/";
+              proxyPass = "https://127.0.0.1:${nodeRedPort}/";
               proxyWebsockets = true;
 
               extraConfig = ''
@@ -141,7 +134,7 @@
           Vouch
           {
             locations."/" = {
-              proxyPass = "http://127.0.0.1:8080/";
+              proxyPass = "http://127.0.0.1:${flatnotesPort}/";
               proxyWebsockets = true;
 
               extraConfig = ''
@@ -154,14 +147,11 @@
 
         "vouch.tomaskrupka.cz" = (SSL // {
           locations."/" = {
-            proxyPass = "https://127.0.0.1:9090";
+            proxyPass = "https://127.0.0.1:${vouchPort}";
           };
         });
       };
   };
-
-  # this is to have access to /home/github/actions/www
-  systemd.services.nginx.serviceConfig.ProtectHome = "read-only";
 
   services.mosquitto =
     let
@@ -244,21 +234,46 @@
     };
   };
 
-  users.groups.github-actions = { };
-  users.users.github-actions = {
-    description = "Github Actions deployments";
-    group = config.users.groups.github-actions.name;
-    homeMode = "0750";
-    isNormalUser = true;
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFa5xTjWp9+btqQ0hkJiU3gys0xD3/uCXK48ZbzlMvjL github-actions@tomaskrupka.cz"
-    ];
+  systemd.services = {
+    # this is to give nginx access to /home/github-actions/www
+    nginx.serviceConfig.ProtectHome = "read-only";
+
+    # install specific nodejs dependencies to the node-red service
+    node-red.path = with pkgs; [ nodePackages.npm nodePackages.nodejs bash ];
+    node-red.serviceConfig.ExecStartPre =
+      "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " +
+      "@flowfuse/node-red-dashboard@^0.11.0";
   };
 
-  users.groups.backup = { };
-  users.users.backup = {
-    isSystemUser = true;
-    group = config.users.groups.backup.name;
+  users = {
+    groups =
+      {
+        github-actions = { };
+        backup = { };
+      };
+
+    users = {
+      github-actions = {
+        description = "Github Actions deployments";
+        group = config.users.groups.github-actions.name;
+        homeMode = "0750";
+        isNormalUser = true;
+        openssh.authorizedKeys.keys = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFa5xTjWp9+btqQ0hkJiU3gys0xD3/uCXK48ZbzlMvjL github-actions@tomaskrupka.cz"
+        ];
+      };
+
+      backup = {
+        isSystemUser = true;
+        group = config.users.groups.backup.name;
+      };
+
+      # these users need access to ssl certificates
+      node-red.extraGroups = [ "acme" ];
+      nginx.extraGroups = [ "acme" "github-actions" ]; # + access to /home/github-actions/www
+      mosquitto.extraGroups = [ "acme" ];
+      vouch-proxy.extraGroups = [ "acme" ];
+    };
   };
 
   system.stateVersion = "23.11";
