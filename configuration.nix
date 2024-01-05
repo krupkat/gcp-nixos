@@ -211,6 +211,7 @@
       initialize = true;
       passwordFile = config.sops.secrets."restic/backup_password".path;
       paths = [
+        "/home/github-actions/www"
         "/var/lib/node-red"
         "/var/lib/flatnotes"
       ];
@@ -266,6 +267,7 @@
       backup = {
         isSystemUser = true;
         group = config.users.groups.backup.name;
+        extraGroups = [ "github-actions" ];
       };
 
       # these users need access to ssl certificates
