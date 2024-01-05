@@ -78,7 +78,7 @@ in
         after = [ "network-online.target" ];
         wantedBy = [ "multi-user.target" ];
         serviceConfig = {
-          User = "flatnotes";
+          User = config.users.users.flatnotes.name;
           WorkingDirectory = "/var/lib/flatnotes";
           StateDirectory = "flatnotes";
           RuntimeDirectory = "flatnotes";

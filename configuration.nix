@@ -107,13 +107,13 @@ in
           };
         in
         {
-          "${domain}" = (sslConfig // {
+          "${domain}" = sslConfig // {
             locations."/".root = "${config.users.users.github-actions.home}/www";
-          });
+          };
 
-          "www.${domain}" = (sslConfig // {
+          "www.${domain}" = sslConfig // {
             globalRedirect = domain;
-          });
+          };
 
           "node-red.${domain}" = lib.mkMerge [
             sslConfig
@@ -147,11 +147,11 @@ in
             }
           ];
 
-          "vouch.${domain}" = (sslConfig // {
+          "vouch.${domain}" = sslConfig // {
             locations."/" = {
               proxyPass = "https://127.0.0.1:${vouchPort}";
             };
-          });
+          };
         };
     };
 
@@ -257,29 +257,35 @@ in
         backup = { };
       };
 
-    users = {
-      github-actions = {
-        description = "Github Actions deployments";
-        group = config.users.groups.github-actions.name;
-        homeMode = "0750";
-        isNormalUser = true;
-        openssh.authorizedKeys.keys = [
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFa5xTjWp9+btqQ0hkJiU3gys0xD3/uCXK48ZbzlMvjL"
-        ];
-      };
+    users =
+      let
+        acmeGroup = config.users.users.acme.group;
+      in
+      {
+        github-actions = {
+          description = "Github Actions deployments";
+          group = config.users.groups.github-actions.name;
+          homeMode = "0750";
+          isNormalUser = true;
+          openssh.authorizedKeys.keys = [
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFa5xTjWp9+btqQ0hkJiU3gys0xD3/uCXK48ZbzlMvjL"
+          ];
+        };
 
-      backup = {
-        isSystemUser = true;
-        group = config.users.groups.backup.name;
-        extraGroups = [ "github-actions" ];
-      };
+        backup = {
+          isSystemUser = true;
+          group = config.users.groups.backup.name;
+          extraGroups = [ config.users.users.github-actions.group ];
+        };
 
-      # these users need access to ssl certificates
-      node-red.extraGroups = [ "acme" ];
-      nginx.extraGroups = [ "acme" "github-actions" ]; # + access to /home/github-actions/www
-      mosquitto.extraGroups = [ "acme" ];
-      vouch-proxy.extraGroups = [ "acme" ];
-    };
+        # these users need access to ssl certificates
+        node-red.extraGroups = [ acmeGroup ];
+        mosquitto.extraGroups = [ acmeGroup ];
+        vouch-proxy.extraGroups = [ acmeGroup ];
+
+        # + access to /home/github-actions/www
+        nginx.extraGroups = [ acmeGroup config.users.users.github-actions.group ];
+      };
   };
 
   system.stateVersion = "23.11";

@@ -1,57 +1,64 @@
 { config, lib, ... }:
-
+let
+  serviceName = name: assert config.systemd.services ? "${name}" ; "${name}.service";
+  acmeService = serviceName "acme-tomaskrupka.cz";
+  inadynService = serviceName "inadyn";
+  vouchService = serviceName "vouch-proxy";
+  mosquittoService = serviceName "mosquitto";
+  resticService = serviceName "restic-backups-gcs";
+in
 {
-  sops = {
+  config.sops = {
     defaultSopsFile = ./secrets/gcp-instance.yaml;
     age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
     secrets = {
       "websupport/dns/api_key" = {
-        reloadUnits = [ "acme-tomaskrupka.cz.service" ];
+        reloadUnits = [ acmeService ];
       };
       "websupport/dns/secret" = {
-        reloadUnits = [ "acme-tomaskrupka.cz.service" ];
+        reloadUnits = [ acmeService ];
       };
 
       "websupport/dyn_dns/api_key" = {
-        reloadUnits = [ "inadyn.service" ];
+        reloadUnits = [ inadynService ];
       };
       "websupport/dyn_dns/secret" = {
-        reloadUnits = [ "inadyn.service" ];
+        reloadUnits = [ inadynService ];
       };
 
       "google/oauth/client_id" = {
-        restartUnits = [ "vouch-proxy.service" ];
+        restartUnits = [ vouchService ];
       };
       "google/oauth/secret" = {
-        restartUnits = [ "vouch-proxy.service" ];
+        restartUnits = [ vouchService ];
       };
       "vouch/jwt_secret" = {
-        restartUnits = [ "vouch-proxy.service" ];
+        restartUnits = [ vouchService ];
       };
 
       "mosquitto/red" = {
         owner = config.users.users.mosquitto.name;
         group = config.users.users.mosquitto.group;
-        restartUnits = [ "mosquitto.service" ];
+        restartUnits = [ mosquittoService ];
       };
       "mosquitto/tiny" = {
         owner = config.users.users.mosquitto.name;
         group = config.users.users.mosquitto.group;
-        restartUnits = [ "mosquitto.service" ];
+        restartUnits = [ mosquittoService ];
       };
 
       "restic/backup_password" = {
         owner = config.users.users.backup.name;
         group = config.users.users.backup.group;
-        reloadUnits = [ "restic-backups-gcs.service" ];
+        reloadUnits = [ resticService ];
       };
       "restic/gcs_keys" = {
         format = "binary";
         sopsFile = ./secrets/authentic-scout-405520-ce3e009f013c.json;
         owner = config.users.users.backup.name;
         group = config.users.users.backup.group;
-        reloadUnits = [ "restic-backups-gcs.service" ];
+        reloadUnits = [ resticService ];
       };
     };
   };
