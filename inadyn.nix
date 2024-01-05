@@ -4,17 +4,16 @@ with lib;
 
 let
   cfg = config.services.inadyn;
-  pkg = getBin cfg.package;
 in
 {
   options.services.inadyn = {
-    enable = mkEnableOption (lib.mdDoc "inadyn service");
+    enable = mkEnableOption (mdDoc "inadyn service");
 
     package = mkOption {
       type = types.package;
       default = pkgs.inadyn;
       defaultText = literalExpression "pkgs.inadyn";
-      description = lib.mdDoc ''
+      description = mdDoc ''
         The inadyn package that should be used.
       '';
     };
@@ -22,7 +21,7 @@ in
     period = mkOption {
       type = types.str;
       default = "60m";
-      description = lib.mdDoc ''
+      description = mdDoc ''
         How often to run the service.
       '';
     };
@@ -33,7 +32,7 @@ in
       let
         quote = (x: "\"" + x + "\"");
         hostname = "tomaskrupka.cz";
-        hostnames = quote hostname + (lib.concatMapStrings (x: ", " + quote (x + "." + hostname))
+        hostnames = quote hostname + (concatMapStrings (x: ", " + quote (x + "." + hostname))
           [ "www" "node-red" "vouch" "home" "notes" ]);
       in
       ''
@@ -76,7 +75,7 @@ in
         LoadCredential = "inadyn.conf:${config.sops.templates."inadyn.conf".path}";
         CacheDirectory = "inadyn";
         ExecStart = ''
-          ${pkg}/bin/inadyn \
+          ${cfg.package}/bin/inadyn \
             --foreground \
             --syslog \
             --once \

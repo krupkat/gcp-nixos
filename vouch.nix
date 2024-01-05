@@ -7,20 +7,20 @@ let
 in
 {
   options.services.vouch-proxy = {
-    enable = mkEnableOption (lib.mdDoc "vouch-proxy service");
+    enable = mkEnableOption (mdDoc "vouch-proxy service");
 
     package = mkOption {
       type = types.package;
       default = pkgs.vouch-proxy;
       defaultText = literalExpression "pkgs.vouch-proxy";
-      description = lib.mdDoc ''
+      description = mdDoc ''
         The vouch-proxy package that should be used.
       '';
     };
 
     certDir = mkOption {
       type = types.str;
-      description = lib.mdDoc ''
+      description = mdDoc ''
         Directory with ssl certificates for the domain.
       '';
     };
@@ -28,14 +28,14 @@ in
     port = mkOption {
       type = types.port;
       default = 9090;
-      description = lib.mdDoc "Listening port.";
+      description = mdDoc "Listening port.";
     };
   };
 
   config = mkIf cfg.enable {
     sops.templates."vouch.yaml".content = ''
       vouch:
-        port: ${cfg.port}
+        port: ${toString cfg.port}
         domains:
           - tomaskrupka.cz
         cookie:
