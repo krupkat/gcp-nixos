@@ -5,7 +5,7 @@
     <nixpkgs/nixos/modules/virtualisation/google-compute-image.nix>
     <sops-nix/modules/sops>
     ./inadyn.nix
-    ./sops.nix
+    ./secrets.nix
     ./vouch.nix
     ./flatnotes.nix
   ];
@@ -190,12 +190,11 @@
 
   services.inadyn = {
     enable = true;
-    configurationTemplate = config.sops.templates."inadyn.conf".path;
   };
 
   services.vouch-proxy = {
     enable = true;
-    configurationTemplate = config.sops.templates."vouch.yaml".path;
+    certDir = config.security.acme.certs."tomaskrupka.cz".directory;
   };
 
   services.flatnotes.enable = true;

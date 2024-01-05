@@ -19,14 +19,6 @@ in
       '';
     };
 
-    configurationTemplate = mkOption {
-      type = types.singleLineStr;
-      description = lib.mdDoc ''
-        Path to inadyn configuration sops-nix template
-        ([documentation](https://github.com/troglobit/inadyn/blob/master/README.md#configuration))
-      '';
-    };
-
     period = mkOption {
       type = types.str;
       default = "60m";
@@ -37,6 +29,31 @@ in
   };
 
   config = mkIf cfg.enable {
+    sops.templates."inadyn.conf".content =
+      let
+        quote = (x: "\"" + x + "\"");
+        hostname = "tomaskrupka.cz";
+        hostnames = quote hostname + (lib.concatMapStrings (x: ", " + quote (x + "." + hostname))
+          [ "www" "node-red" "vouch" "home" "notes" ]);
+      in
+      ''
+        # In-A-Dyn v2.0 configuration file format
+        period          = 600
+        user-agent      = Mozilla/5.0
+
+        custom websupport {
+            ssl            = true
+            username       = ${config.sops.placeholder."websupport/dyn_dns/api_key"}
+            password       = ${config.sops.placeholder."websupport/dyn_dns/secret"}
+            checkip-server = ifconfig.me
+            checkip-path   = /ip
+            checkip-ssl    = true
+            ddns-server    = dyndns.websupport.cz
+            ddns-path      = "/nic/update?hostname=%h&myip=%i"
+            hostname       = { ${hostnames} }
+        }
+      '';
+
     systemd.timers.inadyn = {
       description = "Sync inadyn every hour";
       wantedBy = [ "default.target" ];
@@ -56,7 +73,7 @@ in
         ProtectHome = true;
         PrivateUsers = true;
         PrivateTmp = true;
-        LoadCredential = "inadyn.conf:${cfg.configurationTemplate}";
+        LoadCredential = "inadyn.conf:${config.sops.templates."inadyn.conf".path}";
         CacheDirectory = "inadyn";
         ExecStart = ''
           ${pkg}/bin/inadyn \
