@@ -26,18 +26,11 @@ in
       '';
     };
 
-    hostname = mkOption {
-      type = types.str;
-      description = mdDoc ''
-        Hostname to keep dns synced.
-      '';
-    };
-
-    subdomains = mkOption {
+    domains = mkOption {
       type = types.listOf types.str;
       default = [ ];
       description = mdDoc ''
-        Subdomains to keep dns synced.
+        Domains to keep dns synced.
       '';
     };
   };
@@ -46,8 +39,7 @@ in
     sops.templates."inadyn.conf".content =
       let
         quote = (x: "\"" + x + "\"");
-        hostnames = quote cfg.hostname +
-          (concatMapStrings (x: ", " + quote (x + "." + cfg.hostname)) cfg.subdomains);
+        hostnames = concatMapStringsSep ", " (x: quote x) cfg.domains;
       in
       ''
         # In-A-Dyn v2.0 configuration file format

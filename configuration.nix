@@ -190,8 +190,7 @@ in
       inadyn = {
         enable = true;
         period = "10m";
-        hostname = domain;
-        subdomains = [ "www" "node-red" "vouch" "home" "notes" ];
+        domains = builtins.attrNames config.services.nginx.virtualHosts;
       };
 
       vouch-proxy = {
