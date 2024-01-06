@@ -1,6 +1,6 @@
 # gcp-nixos
 
-This is an example project using [NixOS](https://nixos.org/) to declaratively configure a VM with multiple services.
+This is an example project using [NixOS](https://nixos.org/) to declaratively configure a VM with multiple services that can run on a free tier micro instance (see [howto](howto.md) for details).
 
 The configuration is mostly not specific to the cloud service and can be adapted to other providers (e.g. [Amazon EC2](https://nixos.wiki/wiki/Install_NixOS_on_Amazon_EC2)).
 
