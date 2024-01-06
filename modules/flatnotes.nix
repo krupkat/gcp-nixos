@@ -90,10 +90,14 @@ in
           WorkingDirectory = cfg.userDir;
           StateDirectory = "flatnotes";
           RuntimeDirectory = "flatnotes";
-          EnvironmentFile = builtins.toFile "flatnotes_env" ''
-            PODMAN_SYSTEMD_UNIT='flatnotes.service'
-            XDG_RUNTIME_DIR='/run/flatnotes'
-          '';
+          EnvironmentFile =
+            let
+              environment = pkgs.writeFile "flatnotes_env" ''
+                PODMAN_SYSTEMD_UNIT='flatnotes.service'
+                XDG_RUNTIME_DIR='/run/flatnotes'
+              '';
+            in
+            "${environment}";
           ExecStartPre = "${ExecStartPreScript}/bin/exec-start-pre";
           ExecStart = "${ExecStartScript}/bin/exec-start";
           ExecStop = "${ExecStopScript}/bin/exec-stop";

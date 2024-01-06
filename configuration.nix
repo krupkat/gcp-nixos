@@ -190,7 +190,7 @@ in
       inadyn = {
         enable = true;
         period = "10m";
-        domains = builtins.attrNames config.services.nginx.virtualHosts;
+        domains = lib.attrNames config.services.nginx.virtualHosts;
       };
 
       vouch-proxy = {
@@ -215,13 +215,17 @@ in
           config.services.node-red.userDir
           config.services.flatnotes.userDir
         ];
-        environmentFile = builtins.toFile "restic_gcs_env" ''
-          GOOGLE_PROJECT_ID='authentic-scout-405520'
-          GOOGLE_APPLICATION_CREDENTIALS='${config.sops.secrets."restic/gcs_keys".path}'
-        '';
+        environmentFile =
+          let
+            environment = pkgs.writeText "restic_gcs_env" ''
+              GOOGLE_PROJECT_ID='authentic-scout-405520'
+              GOOGLE_APPLICATION_CREDENTIALS='${config.sops.secrets."restic/gcs_keys".path}'
+            '';
+          in
+          "${environment}";
         extraBackupArgs =
           let
-            ignoreFile = builtins.toFile "ignore" ''
+            ignoreFile = pkgs.writeText "ignore" ''
               ${config.services.node-red.userDir}/node-modules
               ${config.services.node-red.userDir}/.npm
             '';
