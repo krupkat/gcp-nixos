@@ -2,7 +2,7 @@
 
 ## Free tier
 
-Stick to the [free tier](https://cloud.google.com/free/docs/free-cloud-features#free-tier-usage-limits) Google Cloue limits for a completely free instance. Since the machine only has 1GB ram, it can be a challenge to rebuild a new confiuration there, in that case use remote rebuild:
+Stick to the [free tier](https://cloud.google.com/free/docs/free-cloud-features#free-tier-usage-limits) Google Cloud limits for a completely free instance. Since the machine only has 1GB ram, it can be a challenge to rebuild a new confiuration there, in that case use remote rebuild:
 
 ## Remote rebuild
 

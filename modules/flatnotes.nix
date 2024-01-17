@@ -68,7 +68,7 @@ in
           runtimeInputs = [ podman ];
           text = ''
             set -e
-            [ "$SERVICE_RESULT" = success ] || podman stop --ignore --cidfile=/run/flatnotes/podman-'flatnotes'.ctr-id
+            podman stop --ignore --cidfile=/run/flatnotes/podman-'flatnotes'.ctr-id
           '';
         };
         ExecStopPostScript = pkgs.writeShellApplication {
@@ -92,7 +92,7 @@ in
           RuntimeDirectory = "flatnotes";
           EnvironmentFile =
             let
-              environment = pkgs.writeFile "flatnotes_env" ''
+              environment = pkgs.writeText "flatnotes_env" ''
                 PODMAN_SYSTEMD_UNIT='flatnotes.service'
                 XDG_RUNTIME_DIR='/run/flatnotes'
               '';
