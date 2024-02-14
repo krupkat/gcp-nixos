@@ -247,7 +247,7 @@ in
     node-red.path = with pkgs; [ nodePackages.npm nodePackages.nodejs bash ];
     node-red.serviceConfig.ExecStartPre =
       "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " +
-      "@flowfuse/node-red-dashboard@^0.11.0";
+      "@flowfuse/node-red-dashboard@^1.1.0";
   };
 
   users = {
