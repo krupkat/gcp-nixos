@@ -16,6 +16,12 @@ in
   # extra user needed for remote nixos-rebuild support:
   nix.settings.trusted-users = [ "root" "tom" ];
 
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 14d";
+  };
+
   environment = {
     enableAllTerminfo = true;
     systemPackages = with pkgs; [
@@ -247,7 +253,7 @@ in
     node-red.path = with pkgs; [ nodePackages.npm nodePackages.nodejs bash ];
     node-red.serviceConfig.ExecStartPre =
       "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " +
-      "@flowfuse/node-red-dashboard@^1.1.0";
+      "@flowfuse/node-red-dashboard@^1.7.1";
   };
 
   users = {
