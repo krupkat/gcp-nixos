@@ -12,7 +12,7 @@ nixos-rebuild --target-host tomaskrupka.cz --use-remote-sudo switch -I nixos-con
 
 ## New machine setup
 
-Create new machine according to https://nixos.wiki/wiki/Install_NixOS_on_GCE
+Create new machine according to https://wiki.nixos.org/wiki/Install_NixOS_on_GCE
 
 1. Connect to the new instance with Cloud Shell
 2. `sudo nano /etc/nixos/configuration.nix`
