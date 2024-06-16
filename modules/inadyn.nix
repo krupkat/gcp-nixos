@@ -3,10 +3,10 @@
 with lib;
 
 let
-  cfg = config.services.inadyn;
+  cfg = config.services.krupkat.inadyn;
 in
 {
-  options.services.inadyn = {
+  options.services.krupkat.inadyn = {
     enable = mkEnableOption (mdDoc "inadyn service");
 
     package = mkOption {

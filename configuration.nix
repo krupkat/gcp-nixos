@@ -193,7 +193,7 @@ in
         ];
       };
 
-      inadyn = {
+      krupkat.inadyn = {
         enable = true;
         period = "10m";
         domains = lib.attrNames config.services.nginx.virtualHosts;
@@ -253,7 +253,7 @@ in
     node-red.path = with pkgs; [ nodePackages.npm nodePackages.nodejs bash ];
     node-red.serviceConfig.ExecStartPre =
       "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " +
-      "@flowfuse/node-red-dashboard@^1.7.1";
+      "@flowfuse/node-red-dashboard@^1.11.1";
   };
 
   users = {
