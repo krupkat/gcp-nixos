@@ -1,10 +1,10 @@
 keys:
     - &admin_tom age1hm8pnurl30mmfds8fj24k842znufaxlgxds9489tcz3h25un23jqm8qzf4
-    - &server_gcp_3 age124zgmnx48l7g04xpfcz7hefk0q7ec3s5prpqkn3ks96jppxacphsqh22eg
+    - &server_gcp_4 age1aq0ggpl92kfc78m2wuwypqsm56qywdedx080r75gets7wc3y0gjq3etuvt
 
 creation_rules:
     - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
       key_groups:
       - age:
         - *admin_tom
-        - *server_gcp_3
+        - *server_gcp_4

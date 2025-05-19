@@ -7,7 +7,7 @@ Stick to the [free tier](https://cloud.google.com/free/docs/free-cloud-features#
 ## Remote rebuild
 
 ```
-nixos-rebuild --target-host tomaskrupka.cz --use-remote-sudo switch -I nixos-config=configuration.nix
+nixos-rebuild --target-host tomaskrupka.cz --use-remote-sudo switch -I nixos-config=configuration.nix --no-flake
 ```
 
 ## New machine setup
@@ -17,7 +17,8 @@ Create new machine according to https://wiki.nixos.org/wiki/Install_NixOS_on_GCE
 1. Connect to the new instance with Cloud Shell
 2. `sudo nano /etc/nixos/configuration.nix`
     1. add: `nix.settings.trusted-users = [ "root" "tom" ];`
-    2. `sudo nixos-rebuild switch`
+    2. add: `nix.settings.require-sigs = false;`
+    3. `sudo nixos-rebuild switch`
 3. Generate sops key for the device
     1. `nix-shell -p ssh-to-age --run 'cat /etc/ssh/ssh_host_ed25519_key.pub | ssh-to-age'`
     2. add the result to `.sops.yaml`

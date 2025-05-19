@@ -2,11 +2,12 @@
 
 let
   domain = "tomaskrupka.cz";
+  sources = import ./nix/sources.nix;
 in
 {
   imports = [
     <nixpkgs/nixos/modules/virtualisation/google-compute-image.nix>
-    <sops-nix/modules/sops>
+    "${sources.sops-nix}/modules/sops"
     ./modules/inadyn.nix
     ./modules/flatnotes.nix
     ./modules/vouch.nix
@@ -15,6 +16,7 @@ in
 
   # extra user needed for remote nixos-rebuild support:
   nix.settings.trusted-users = [ "root" "tom" ];
+  nix.settings.require-sigs = false;
 
   nix.gc = {
     automatic = true;
@@ -253,7 +255,7 @@ in
     node-red.path = with pkgs; [ nodePackages.npm nodePackages.nodejs bash ];
     node-red.serviceConfig.ExecStartPre =
       "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " +
-      "@flowfuse/node-red-dashboard@^1.11.1";
+      "@flowfuse/node-red-dashboard@^1.24.0";
   };
 
   users = {
@@ -294,5 +296,5 @@ in
       };
   };
 
-  system.stateVersion = "23.11";
+  system.stateVersion = "25.11";
 }

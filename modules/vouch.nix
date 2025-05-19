@@ -11,7 +11,11 @@ in
 
     package = mkOption {
       type = types.package;
-      default = pkgs.vouch-proxy;
+      default = pkgs.vouch-proxy.overrideAttrs (oldAttrs: {
+        preCheck = oldAttrs.preCheck + ''
+          export ISTRAVIS=true;
+        '';
+      });
       defaultText = literalExpression "pkgs.vouch-proxy";
       description = mdDoc ''
         The vouch-proxy package that should be used.
