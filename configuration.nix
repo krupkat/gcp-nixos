@@ -67,7 +67,7 @@ in
       node-red = {
         enable = true;
         port = 1880;
-        configFile = pkgs.substituteAll { src = ./templates/node-red-settings.js; cert_dir = certDir; };
+        configFile = pkgs.replaceVars ./templates/node-red-settings.js { cert_dir = certDir; };
       };
 
       nginx = {
@@ -235,6 +235,7 @@ in
           let
             ignoreFile = pkgs.writeText "ignore" ''
               ${config.services.node-red.userDir}/node-modules
+              ${config.services.node-red.userDir}/node_modules
               ${config.services.node-red.userDir}/.npm
             '';
           in
@@ -255,8 +256,10 @@ in
     node-red.path = with pkgs; [ nodePackages.npm nodePackages.nodejs bash ];
     node-red.serviceConfig.ExecStartPre =
       "${pkgs.nodePackages.npm}/bin/npm install --prefix ${config.services.node-red.userDir} " +
-      "@flowfuse/node-red-dashboard@^1.24.0";
+      "@flowfuse/node-red-dashboard@^1.30.2";
   };
+
+  security.googleOsLogin.enable = lib.mkForce false;
 
   users = {
     groups =
@@ -270,6 +273,15 @@ in
         acmeGroup = config.users.users.acme.group;
       in
       {
+        tom = {
+          isNormalUser = true;
+          extraGroups = [ "wheel" ];
+          initialPassword = "123456";
+          openssh.authorizedKeys.keys = [
+            "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDq+98u++bivMPalMrNLKAdNE+gyYOzZrrQYBCpIw3Nu"
+          ];
+        };
+
         github-actions = {
           description = "Github Actions deployments";
           group = config.users.groups.github-actions.name;

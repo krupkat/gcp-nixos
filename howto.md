@@ -7,7 +7,7 @@ Stick to the [free tier](https://cloud.google.com/free/docs/free-cloud-features#
 ## Remote rebuild
 
 ```
-nixos-rebuild --target-host tomaskrupka.cz --use-remote-sudo switch -I nixos-config=configuration.nix --no-flake
+nixos-rebuild --target-host tomaskrupka --ask-sudo-password switch -I nixos-config=configuration.nix --no-flake
 ```
 
 ## New machine setup
@@ -32,4 +32,55 @@ Create new machine according to https://wiki.nixos.org/wiki/Install_NixOS_on_GCE
 
 ```
 sops --input-type binary -e secrets/tmp.json > secrets/encrypted.json
+```
+
+## Patch nixos vm build
+
+```diff
+diff --git a/nixos/maintainers/scripts/gce/create-gce.sh b/nixos/maintainers/scripts/gce/create-gce.sh
+index 0eec4d041108..ea9ae4332313 100755
+--- a/nixos/maintainers/scripts/gce/create-gce.sh
++++ b/nixos/maintainers/scripts/gce/create-gce.sh
+@@ -7,9 +7,9 @@ BUCKET_NAME="${BUCKET_NAME:-nixos-cloud-images}"
+ TIMESTAMP="$(date +%Y%m%d%H%M)"
+ export TIMESTAMP
+ 
+-nix-build '<nixpkgs/nixos/lib/eval-config.nix>' \
++nix-build './nixos/lib/eval-config.nix' \
+    -A config.system.build.googleComputeImage \
+-   --arg modules "[ <nixpkgs/nixos/modules/virtualisation/google-compute-image.nix> ]" \
++   --arg modules "[ ./nixos/modules/virtualisation/google-compute-image.nix ]" \
+    --argstr system x86_64-linux \
+    -o gce \
+    -j 10
+diff --git a/nixos/modules/virtualisation/google-compute-config.nix b/nixos/modules/virtualisation/google-compute-config.nix
+index 8f9e2b4f4075..dc44c7eecaac 100644
+--- a/nixos/modules/virtualisation/google-compute-config.nix
++++ b/nixos/modules/virtualisation/google-compute-config.nix
+@@ -55,7 +55,7 @@ in
+ 
+   # enable OS Login. This also requires setting enable-oslogin=TRUE metadata on
+   # instance or project level
+-  security.googleOsLogin.enable = true;
++  security.googleOsLogin.enable = false;
+ 
+   # Use GCE udev rules for dynamic disk volumes
+   services.udev.packages = [ pkgs.google-guest-configs ];
+@@ -141,4 +141,16 @@ in
+     # We set up network interfaces declaratively.
+     setup = false
+   '';
++
++  users.users.tom = {
++    isNormalUser = true;
++    extraGroups = [ "wheel" ];
++    initialPassword = "123456";
++    openssh.authorizedKeys.keys = [
++      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDq+98u++bivMPalMrNLKAdNE+gyYOzZrrQYBCpIw3Nu"
++    ];
++  };
++
++  nix.settings.trusted-users = [ "root" "tom" ];
++  nix.settings.require-sigs = false;
+ }
 ```
